@@ -4,6 +4,8 @@
  */
 let kittens = []
 let kitten = {}
+catNames = []
+
 /**
  * Called when submitting the new Kitten Form
  * This method will pull data from the form
@@ -18,24 +20,31 @@ function addKitten(event) {
   let form = event.target
 
   let name = form.name.value
-  let img = "https://robohash.org/" + name + "?set=set4"
+  if (catNames.indexOf(name) !== -1) {
+    alert("You already had a cat named " + name)
+    saveKittens()
+    form.reset()
+  } else {
+    let img = "https://robohash.org/" + name + "?set=set4"
 
-  kitten = kittens.find(kitten => kitten.name == name)
+    kitten = kittens.find(kitten => kitten.name == name)
 
-  if (!kitten) {
-    kitten = {
-      id: generateId(),
-      name: name,
-      img: img,
-      affection: 5,
-      mood: "tolerant"
+    if (!kitten) {
+      kitten = {
+        id: generateId(),
+        name: name,
+        img: img,
+        affection: 5,
+        mood: "tolerant",
+        favorite: false
+      }
+      kittens.push(kitten)
     }
-    kittens.push(kitten)
-  }
 
-  console.log(kittens)
-  saveKittens()
-  form.reset()
+    catNames.push(kitten.name)
+    saveKittens()
+    form.reset()
+  }
 }
 
 
@@ -45,6 +54,7 @@ function addKitten(event) {
  */
 function saveKittens() {
   window.localStorage.setItem("kittens", JSON.stringify(kittens))
+  window.localStorage.setItem("catNames", JSON.stringify(catNames))
   drawKittens()
 }
 
@@ -58,6 +68,10 @@ function loadKittens() {
   if (kittenData) {
     kittens = kittenData
   }
+  let catNameData = JSON.parse(window.localStorage.getItem("catNames"))
+  if (catNameData) {
+    catNames = catNameData
+  }
 }
 
 /**
@@ -67,8 +81,9 @@ function drawKittens() {
   let template = ""
 
   kittens.forEach(kitten => {
-    template += `
-      <div class="card mt-1 mb-1 kitten container">
+    if (kitten.favorite == false) {
+      template += `
+      <div class="card mt-1 mb-1 kitten container" id="${kitten.id}">
         <div class="d-flex space-between">
           <img class="" src = "${kitten.img}" height="100px" alt="${kitten.name}">
         </div>
@@ -85,11 +100,36 @@ function drawKittens() {
             <span>${kitten.affection}</span>
         </div>
         <div class="d-flex space-between mt-2">
-          <button class="red" onclick = "pet('${kitten.id}, ${kitten.affection}')">Pet</button>
+          <button class="red" onclick = "pet('${kitten.id}', '${kitten.affection}', '${kitten.mood}')">Pet</button>
           <button class="align-right" onclick = "catnip('${kitten.id}')">Catnip</button>
         </div>
       </div>
       `
+    } else {
+      template += `
+      <div class="card mt-1 mb-1 kitten container favorite" id="${kitten.id}">
+        <div class="d-flex space-between">
+          <img class="" src = "${kitten.img}" height="100px" alt="${kitten.name}">
+        </div>
+        <div class="mt-2">
+            <span class="bold">Name: </span>
+            <span>${kitten.name}</span>
+        </div>
+        <div class="">
+            <span class="bold">Mood: </span>
+            <span>${kitten.mood}</span>
+        </div>
+        <div class="">
+            <span class="bold">Affection: </span>
+            <span>${kitten.affection}</span>
+        </div>
+        <div class="d-flex space-between mt-2">
+          <button class="red" onclick = "pet('${kitten.id}', '${kitten.affection}', '${kitten.mood}')">Pet</button>
+          <button class="align-right" onclick = "catnip('${kitten.id}')">Catnip</button>
+        </div>
+      </div>
+      `
+    }
   })
   document.getElementById("kittens").innerHTML = template
 }
@@ -100,11 +140,11 @@ function drawKittens() {
  * @return {Kitten}
  */
 function findKittenById(id) {
-  let index = kittens.findIndex(kitten => kitten.id == id);
+  let index = kittens.findIndex(kitten => kitten.id == id)
   if (index == -1) {
     throw new Error("Invalid Kitten ID")
   } else {
-    return index
+    return kittens[index];
   }
 }
 
@@ -118,41 +158,14 @@ function findKittenById(id) {
  * @param {string} id
  */
 function pet(id) {
-  console.log("got here 1")
+  kitten = findKittenById(id)
   let rng = Math.random()
-  let a = kitten.affection
   if (rng > 0.7) {
-    a++
+    kitten.affection++
   } else {
-    a--
+    kitten.affection--
   }
-  console.log("got here 2")
-  switch (a) {
-    case a > 14:
-      alert(kitten.name + " loves you.");
-      favoriteKitten(id);
-      break;
-    case a > 9 | a <= 14:
-      kitten.mood = "happy";
-      break;
-    case a > 6 | a <= 9:
-      kitten.mood = "content";
-      break;
-    case a > 3 | a <= 6:
-      kitten.mood = "tolerant"
-      break;
-    case a > 1 | a <= 3:
-      kitten.mood = "angry"
-      break;
-    case a == 1:
-      kitten.mood = "furious"
-      break;
-    case a < 1:
-      alert(kitten.name + " ran away!")
-      deleteKitten(id)
-  }
-  console.log("got here 3")
-
+  kitten.mood = setKittenMood(kitten)
   saveKittens()
 }
 
@@ -163,18 +176,64 @@ function pet(id) {
  * save the kittens
  * @param {string} id
  */
-function catnip(id) {}
+function catnip(id) {
+  kitten = findKittenById(id)
+  kitten.affection++
+  kitten.mood = setKittenMood(kitten)
+  saveKittens()
+}
 
 /**
  * Sets the kittens mood based on its affection
  * Happy > 6, Tolerant <= 5, Angry <= 3, Gone <= 0
  * @param {Kitten} kitten
  */
-function setKittenMood(kitten) {}
+function setKittenMood(kitten) {
+
+  switch (kitten.affection) {
+    case 15:
+      alert(kitten.name + " loves you.")
+      kitten.favorite = true
+      break
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+      kitten.mood = "happy"
+      break
+    case 7:
+    case 8:
+    case 9:
+      kitten.mood = "content"
+      break
+    case 6:
+    case 5:
+      kitten.mood = "tolerant"
+      break
+    case 4:
+    case 3:
+    case 2:
+      kitten.mood = "angry"
+      break
+    case 1:
+      kitten.mood = "furious"
+      break
+    case 0:
+      alert(kitten.name + " ran away!")
+      kittens.splice(kitten, 1)
+      break
+    default:
+      console.log("ERROR: Couldn't find Affection")
+      break
+  }
+
+  return kitten.mood;
+}
 
 function getStarted() {
-  document.getElementById("welcome").remove();
-  drawKittens();
+  document.getElementById("welcome").remove()
+  drawKittens()
 }
 
 /**
