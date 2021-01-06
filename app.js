@@ -81,11 +81,10 @@ function drawKittens() {
   let template = ""
 
   kittens.forEach(kitten => {
-    if (kitten.favorite == false) {
-      template += `
-      <div class="card mt-1 mb-1 kitten container" id="${kitten.id}">
-        <div class="d-flex space-between">
-          <img class="" src = "${kitten.img}" height="100px" alt="${kitten.name}">
+    template += `
+      <div class = "card mt-1 mb-1 kitten container ${kitten.mood} ${kitten.favorite ? 'favorite' : ''}" id = "${kitten.id}">
+        <div class="d-flex space-between kitten">
+          <img src="${kitten.img}" height="100px" alt="${kitten.name}">
         </div>
         <div class="mt-2">
             <span class="bold">Name: </span>
@@ -100,36 +99,11 @@ function drawKittens() {
             <span>${kitten.affection}</span>
         </div>
         <div class="d-flex space-between mt-2">
-          <button class="red" onclick = "pet('${kitten.id}', '${kitten.affection}', '${kitten.mood}')">Pet</button>
-          <button class="align-right" onclick = "catnip('${kitten.id}')">Catnip</button>
+          <button class="red ${kitten.affection == 0 ? 'hidden' : ''}" onclick = "pet('${kitten.id}')">Pet</button>
+          <button class="align-right ${kitten.affection == 0 ? 'hidden' : ''}" onclick = "catnip('${kitten.id}')">Catnip</button>
         </div>
       </div>
       `
-    } else {
-      template += `
-      <div class="card mt-1 mb-1 kitten container favorite" id="${kitten.id}">
-        <div class="d-flex space-between">
-          <img class="" src = "${kitten.img}" height="100px" alt="${kitten.name}">
-        </div>
-        <div class="mt-2">
-            <span class="bold">Name: </span>
-            <span>${kitten.name}</span>
-        </div>
-        <div class="">
-            <span class="bold">Mood: </span>
-            <span>${kitten.mood}</span>
-        </div>
-        <div class="">
-            <span class="bold">Affection: </span>
-            <span>${kitten.affection}</span>
-        </div>
-        <div class="d-flex space-between mt-2">
-          <button class="red" onclick = "pet('${kitten.id}', '${kitten.affection}', '${kitten.mood}')">Pet</button>
-          <button class="align-right" onclick = "catnip('${kitten.id}')">Catnip</button>
-        </div>
-      </div>
-      `
-    }
   })
   document.getElementById("kittens").innerHTML = template
 }
@@ -189,7 +163,7 @@ function catnip(id) {
  * @param {Kitten} kitten
  */
 function setKittenMood(kitten) {
-
+  document.getElementById(kitten.id).classList.remove(kitten.mood)
   switch (kitten.affection) {
     case 15:
       alert(kitten.name + " loves you.")
@@ -220,20 +194,32 @@ function setKittenMood(kitten) {
       kitten.mood = "furious"
       break
     case 0:
+      kitten.mood = "gone"
       alert(kitten.name + " ran away!")
-      kittens.splice(kitten, 1)
+      let deletedKitten = kittens.indexOf(kitten)
+      // kittens.splice(deletedKitten, 1)
+      document.getElementById(kitten.id).classList.add(kitten.mood)
       break
     default:
       console.log("ERROR: Couldn't find Affection")
       break
   }
-
+  document.getElementById(kitten.id).classList.add(kitten.mood)
   return kitten.mood;
 }
 
 function getStarted() {
   document.getElementById("welcome").remove()
   drawKittens()
+}
+
+function deleteKittens() {
+  if (window.confirm("Do you want to remove all Kittens?")) {
+    window.localStorage.removeItem("kittens")
+    kittens.splice(0, kittens.length)
+    saveKittens()
+    console.log("got here")
+  }
 }
 
 /**
